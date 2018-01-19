@@ -1,0 +1,5 @@
+name: 'Content Snippets'
+type: module
+description: 'Allows using snippet codes in text'
+package: 'Content Snippet'
+core: 8.x

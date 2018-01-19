@@ -1,1 +1,1 @@
-# D8-content_snippets
+# Content Snippets
