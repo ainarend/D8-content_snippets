@@ -1,0 +1,43 @@
+<?php
+/**
+ * @file
+ * Contains install hooks for content_snippets module.
+ */
+
+use Drupal\user\Entity\Role;
+
+/**
+ * Handle the out-of-the box necessities.
+ *
+ * Implements hook_install().
+ */
+function termstatus_install() {
+  $roles = Role::loadMultiple();
+
+  if (!empty($roles)) {
+    /** @var Role $role */
+    foreach ($roles as $role) {
+      $role->grantPermission('access snippets');
+      $role->save();
+    }
+  }
+
+}
+
+/**
+ * Handles the necessary changes for module uninstall.
+ *
+ * Implements hook_uninstall().
+ */
+function termstatus_uninstall() {
+  $roles = Role::loadMultiple();
+
+  if (!empty($roles)) {
+    /** @var Role $role */
+    foreach ($roles as $role) {
+      $role->revokePermission('access snippets');
+      $role->save();
+    }
+  }
+
+}
