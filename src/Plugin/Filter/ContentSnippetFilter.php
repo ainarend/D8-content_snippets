@@ -34,7 +34,7 @@ class ContentSnippetFilter extends FilterBase {
 
     $snippets = $this->getAllSnippets();
 
-    $pattern = '/\[(' . implode("|", $snippets) . ')?.*(?:(?!\[]).)]/imU';
+    $pattern = '/\[(' . implode("|", array_keys($snippets)) . ')?.*(?:(?!\[]).)]/imU';
     $depth = 0;
 
     while($depth < $this->settings['snippet_depth'] && preg_match_all($pattern, $text, $matched_snippet)) {
@@ -49,7 +49,7 @@ class ContentSnippetFilter extends FilterBase {
 
             if (!empty($matched_snippet[2])) {
 
-              $args = $this->getSnippetArguements($matched_snippet);
+              $args = $this->getSnippetArguments($matched_snippet[0]);
 
             }
 
@@ -87,7 +87,7 @@ class ContentSnippetFilter extends FilterBase {
     $form['snippet_depth'] = [
       '#type' => 'textfield',
       '#title' => $this->t(''),
-      '#default_value' => $this->settings['snippet_depth'] ? $this->settings['snippet_depth'] : 4,
+      '#default_value' => isset($this->settings['snippet_depth']) ? $this->settings['snippet_depth'] : 4,
       '#description' => $this->t('Specify the snippet recursion depth'),
     ];
 
@@ -116,7 +116,7 @@ class ContentSnippetFilter extends FilterBase {
    * @param $match
    * @return mixed
    */
-  public function getSnippetArguements($snippet) {
+  public function getSnippetArguments($snippet) {
 
     $pattern = '/(\\w+)\s*(\[])?=\\s*("[^"]*"|\'[^\']*\'|[^"\'\\s>]*)/';
 
