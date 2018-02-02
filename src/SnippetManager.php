@@ -5,6 +5,8 @@
  */
 
 namespace Drupal\content_snippets;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Render\RendererInterface;
 
 /**
  * Class SnippetManager
@@ -12,12 +14,38 @@ namespace Drupal\content_snippets;
  */
 class SnippetManager {
 
+  /**
+   * @var RendererInterface
+   */
+  public $renderer;
+
+  /**
+   * @var array
+   */
   protected $snippets;
 
-  public function __construct() {
+  /**
+   * @var ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * SnippetManager constructor.
+   * @param RendererInterface $renderer
+   * @param ModuleHandlerInterface $moduleHandler
+   */
+  public function __construct(RendererInterface $renderer, ModuleHandlerInterface $moduleHandler) {
+    $this->renderer = $renderer;
+    $this->moduleHandler = $moduleHandler;
+
     $this->snippets = $this->gatherSnippets();
   }
 
+  /**
+   * Gets the array of available snippets.
+   *
+   * @return array
+   */
   public function getSnippets() {
     return $this->snippets;
   }
@@ -29,9 +57,9 @@ class SnippetManager {
    */
   public function gatherSnippets() {
 
-    $snippets = \Drupal::moduleHandler()->invokeAll('snippets_info');
+    $snippets = $this->moduleHandler->invokeAll('snippets_info');
 
-    \Drupal::moduleHandler()->alter('snippets_info', $snippets);
+    $this->moduleHandler->alter('snippets_info', $snippets);
 
     return $snippets;
 
@@ -46,15 +74,23 @@ class SnippetManager {
   public function getSnippetWithArguments($snippet) {
     // Check if the snippet contains arguements.
     $args = [];
-    if (preg_match("/^\[(" . implode("|", array_keys($this->snippets)) . ") ?(.*)\]$/i", $snippet, $matched_snippet)) {
+    $all_snippets = $this->snippets;
+    if (preg_match("/^\[(" . implode("|", array_keys($all_snippets)) . ") ?(.*)\]$/i", $snippet, $matched_snippet)) {
 
-      if (!empty($matched_snippet[2])) {
+      $matched_elements = count($matched_snippet);
 
-        $snippet = $matched_snippet[2];
+      if ($matched_elements >= 2) {
+        $snippet_title = $matched_snippet[1];
+        $snippet = $all_snippets[$snippet_title];
+      }
+
+      if ($matched_elements >= 3) {
+
+        $found_arguments = $matched_snippet[2];
 
         $pattern = '/(\\w+)\s*(\[])?=\\s*("[^"]*"|\'[^\']*\'|[^"\'\\s>]*)/';
 
-        preg_match_all($pattern, $snippet, $matches, PREG_SET_ORDER);
+        preg_match_all($pattern, $found_arguments, $matches, PREG_SET_ORDER);
 
         if (!empty($matches)) {
           foreach ($matches as $attr) {
@@ -66,32 +102,43 @@ class SnippetManager {
             }
 
           }
+
         }
 
       }
 
     }
 
-    return $args;
+    $snippet['args'] = $args;
+
+    return $snippet;
+
   }
 
+  /**
+   * Returns the patters string for all available snippets.
+   *
+   * @return string
+   */
   public function getPatternWithAllSnippets() {
     $snippets = $this->snippets;
     return '/\[(' . implode("|", array_keys($snippets)) . ')?.*(?:(?!\[]).)]/imU';
   }
 
+  /**
+   * Gets the replacement data for the snippet.
+   *
+   * @param $snippet
+   * @return mixed|string
+   */
   public function getSnippetReplaceData($snippet) {
 
     $replace_data = '';
 
-    $args = $this->getSnippetWithArguments($snippet);
+    $snippet = $this->getSnippetWithArguments($snippet);
 
-    //$snippet = ;
-
-    $snippet_info = $this->snippets[$snippet[1]];
-
-    if (array_key_exists('callback', $snippet_info) && function_exists($snippet_info['callback'])) {
-      $replace_data = call_user_func($snippet_info['callback'], $args);
+    if (array_key_exists('callback', $snippet) && function_exists($snippet['callback'])) {
+      $replace_data = call_user_func($snippet['callback'], $snippet['args']);
     }
 
     return $replace_data;

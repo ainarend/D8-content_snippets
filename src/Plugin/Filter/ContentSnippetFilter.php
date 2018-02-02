@@ -23,6 +23,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginInterface {
 
+  /**
+   * @var SnippetManager
+   */
   protected $snippetManager;
 
   /**
@@ -44,7 +47,8 @@ class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginI
       $container->get('snippet_manager')
     );
   }
-    /**
+
+  /**
    * Filtering for snippets.
    *
    * This method looks through the text to find snippets (with possible arguements)
@@ -53,10 +57,9 @@ class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginI
    * @param string $text
    * @param string $langcode
    * @return FilterProcessResult
+   * @throws \Exception
    */
   public function process($text, $langcode) {
-
-    $snippets = $this->snippetManager->getSnippets();
 
     $pattern = $this->snippetManager->getPatternWithAllSnippets();
     $depth = 0;
@@ -70,8 +73,7 @@ class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginI
           $replace_data = $this->snippetManager->getSnippetReplaceData($snippet);
 
           if (isset($replace_data)) {
-            $renderer = \Drupal::service('renderer');
-            $text = str_replace($snippet, $renderer->render($replace_data), $text);
+            $text = str_replace($snippet, $this->snippetManager->renderer->render($replace_data), $text);
           }
         }
       }

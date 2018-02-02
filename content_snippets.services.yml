@@ -1,6 +1,7 @@
 services:
   snippet_manager:
     class: Drupal\content_snippets\SnippetManager
+    arguments: ['@renderer', '@module_handler']
   content_snippets.twig.snippet:
     class: Drupal\content_snippets\SnippetTwigExtension
     arguments: ['@snippet_manager']

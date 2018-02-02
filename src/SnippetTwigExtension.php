@@ -15,12 +15,25 @@ use Twig_ExtensionInterface;
  */
 class SnippetTwigExtension extends \Twig_Extension implements ContainerInjectionInterface {
 
+  /**
+   * @var SnippetManager
+   */
   protected $snippetManager;
 
+  /**
+   * SnippetTwigExtension constructor.
+   * @param SnippetManager $snippetManager
+   */
   public function __construct(SnippetManager $snippetManager) {
     $this->snippetManager = $snippetManager;
   }
 
+  /**
+   * For DI.
+   *
+   * @param ContainerInterface $container
+   * @return static
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('snippet_manager')
@@ -35,8 +48,11 @@ class SnippetTwigExtension extends \Twig_Extension implements ContainerInjection
     return 'snippet';
   }
 
+
   /**
-   * In this function we can declare the extension function
+   * Declare the twig extension.
+   *
+   * @return array|\Twig_SimpleFunction[]
    */
   public function getFunctions() {
     return [
@@ -49,13 +65,19 @@ class SnippetTwigExtension extends \Twig_Extension implements ContainerInjection
   }
 
   /**
-   * The php function to load a given block
+   * Renders the snippet replacement data, if it there's any.
+   *
+   * @param $snippet
+   * @return \Drupal\Component\Render\MarkupInterface
+   * @throws \Exception
    */
   public function snippet($snippet) {
-    return [
-      '#type' => 'markup',
-      '#markup' => '<ul><li>My second node</li></ul>'
-    ];
+    $render_data = $this->snippetManager->getSnippetReplaceData($snippet);
+
+    if (isset($render_data)) {
+      return $this->snippetManager->renderer->render($render_data);
+    }
+    return $snippet;
   }
 
 }
