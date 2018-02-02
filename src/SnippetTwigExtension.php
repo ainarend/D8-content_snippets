@@ -5,9 +5,9 @@
  */
 
 namespace Drupal\content_snippets;
+
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Twig_ExtensionInterface;
 
 /**
  * Class SnippetTwigExtension
@@ -47,7 +47,6 @@ class SnippetTwigExtension extends \Twig_Extension implements ContainerInjection
   public function getName() {
     return 'snippet';
   }
-
 
   /**
    * Declare the twig extension.

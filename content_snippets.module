@@ -1,0 +1,108 @@
+<?php
+/**
+ * @file
+ * Contains hook implementations and helper functions.
+ */
+
+use Drupal\views\Views;
+
+/**
+ * Implements hook_snippets_info().
+ */
+function content_snippets_snippets_info() {
+  $snippets = [];
+
+  $snippets['node'] = [
+    'title' => t('Render a Node'),
+    'description' => t('Render any available Nodes'),
+    'callback' => 'content_snippets_node_snippet'
+  ];
+
+  $snippets['term'] = [
+    'title' => t('Render a Taxonomy Term'),
+    'description' => t('Render any available Taxonomy Term'),
+    'callback' => 'content_snippets_taxonomy_term_snippet'
+  ];
+
+  $snippets['views'] = [
+    'title' => t('Render a View'),
+    'description' => t('Render any available Views'),
+    'callback' => 'content_snippets_views_snippet'
+  ];
+
+  return $snippets;
+}
+
+/**
+ * Callback method for the [node] snippet.
+ *
+ * @param $args
+ */
+function content_snippets_node_snippet($args) {
+
+  return content_snippets_entity_type_snippet('node', $args);
+
+}
+
+/**
+ * Callback method for the [term] snippet.
+ *
+ * @param $args
+ */
+function content_snippets_taxonomy_term_snippet($args) {
+
+  return content_snippets_entity_type_snippet('taxonomy_term', $args);
+
+}
+
+function content_snippets_entity_type_snippet($entity_type, $args) {
+
+  if (empty($args) || !array_key_exists('id', $args)) {
+    return NULL;
+  }
+
+  $view_builder = \Drupal::entityTypeManager()->getViewBuilder($entity_type);
+  $storage = \Drupal::entityTypeManager()->getStorage($entity_type);
+
+  $entity = $storage->load($args['id']);
+
+  if (!empty($entity)) {
+    $build = $view_builder->view($entity, 'full');
+    return $build;
+  }
+
+  return NULL;
+}
+
+/**
+ * Callback method for the [views] snippet.
+ *
+ * @param $args
+ * @return array|null
+ */
+function content_snippets_views_snippet($args) {
+
+  if (empty($args) || (!array_key_exists('id', $args) && !array_key_exists('display', $args))) {
+    return NULL;
+  }
+
+  $view = Views::getView($args['id']);
+
+  if (is_object($view)) {
+
+    if (array_key_exists('context_filters', $args)) {
+      $view_args = explode('/', $args['context_filters']);
+      $view->setArguments($view_args);
+    }
+
+    $view->setDisplay($args['display']);
+    $view->preExecute();
+    $view->execute();
+
+    $build = $view->buildRenderable();
+
+    return $build;
+  }
+
+  return NULL;
+}

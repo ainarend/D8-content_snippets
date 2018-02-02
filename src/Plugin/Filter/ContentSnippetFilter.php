@@ -80,7 +80,7 @@ class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginI
 
       $depth++;
 
-    };
+    }
 
     return new FilterProcessResult($text);
   }
