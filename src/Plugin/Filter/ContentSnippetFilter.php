@@ -6,9 +6,12 @@
 
 namespace Drupal\content_snippets\Plugin\Filter;
 
+use Drupal\content_snippets\SnippetManager;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * @Filter(
@@ -18,9 +21,30 @@ use Drupal\filter\Plugin\FilterBase;
  *   type = Drupal\filter\Plugin\FilterInterface::TYPE_MARKUP_LANGUAGE,
  * )
  */
-class ContentSnippetFilter extends FilterBase {
+class ContentSnippetFilter extends FilterBase implements ContainerFactoryPluginInterface {
+
+  protected $snippetManager;
 
   /**
+   * {@inheritdoc}
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, SnippetManager $snippetManager) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->snippetManager = $snippetManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('snippet_manager')
+    );
+  }
+    /**
    * Filtering for snippets.
    *
    * This method looks through the text to find snippets (with possible arguements)
@@ -32,34 +56,18 @@ class ContentSnippetFilter extends FilterBase {
    */
   public function process($text, $langcode) {
 
-    $snippets = $this->getAllSnippets();
+    $snippets = $this->snippetManager->getSnippets();
 
-    $pattern = '/\[(' . implode("|", array_keys($snippets)) . ')?.*(?:(?!\[]).)]/imU';
+    $pattern = $this->snippetManager->getPatternWithAllSnippets();
     $depth = 0;
 
     while($depth < $this->settings['snippet_depth'] && preg_match_all($pattern, $text, $matched_snippet)) {
 
       if (!empty($matched_snippet[0])) {
-        // The matched_snippet contains an array where 0 is sthe full snippet with [ and ] included.
+        // The matched_snippet contains an array where 0 is the full snippet with [ and ] included.
         foreach ($matched_snippet[0] as $snippet) {
 
-          // Check if the snippet contains arguements.
-          $args = [];
-          if (preg_match("/^\[(" . implode("|", array_keys($snippets)) . ") ?(.*)\]$/i", $snippet, $matched_snippet)) {
-
-            if (!empty($matched_snippet[2])) {
-
-              $args = $this->getSnippetArguments($matched_snippet[0]);
-
-            }
-
-          }
-
-          $snippet_info = $snippets[$matched_snippet[1]];
-
-          if (array_key_exists('callback', $snippet_info) && function_exists($snippet_info['callback'])) {
-            $replace_data = call_user_func($snippet_info['callback'], $args);
-          }
+          $replace_data = $this->snippetManager->getSnippetReplaceData($snippet);
 
           if (isset($replace_data)) {
             $renderer = \Drupal::service('renderer');
@@ -93,50 +101,6 @@ class ContentSnippetFilter extends FilterBase {
 
     return $form;
 
-  }
-
-  /**
-   * Invokes the snippets info hook for all modules to register their snippets.
-   *
-   * @return array
-   */
-  public function getAllSnippets() {
-
-    $snippets = \Drupal::moduleHandler()->invokeAll('snippets_info');
-
-    \Drupal::moduleHandler()->alter('snippets_info', $snippets);
-
-    return $snippets;
-
-  }
-
-  /**
-   * This looks thorugh the s
-   *
-   * @param $match
-   * @return mixed
-   */
-  public function getSnippetArguments($snippet) {
-
-    $pattern = '/(\\w+)\s*(\[])?=\\s*("[^"]*"|\'[^\']*\'|[^"\'\\s>]*)/';
-
-    preg_match_all($pattern, $snippet, $matches, PREG_SET_ORDER);
-
-    if (!empty($matches)) {
-      foreach ($matches as $attr) {
-
-        if ($attr[2] == '[]') {
-          $args[$attr[1]] = explode(",", trim($attr[3], "\""));
-        }
-
-        else {
-          $args[$attr[1]] = trim($attr[3], "\"");
-        }
-
-      }
-    }
-
-    return $args;
   }
 
 }
