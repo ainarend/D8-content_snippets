@@ -50,7 +50,7 @@ The arguments passed with the snippet are available for the callback function in
 1. Enable the Content Snippets filter for any appropriate text filters.
 2. For nodes or anywhere else where the text filter is applied, use the snippet like this:
 ```
-[recet_nodes limit="10"]
+[recent_nodes limit="10"]
 ```
 
 The snippet gets replaced within the text by the markuo defined in mymodule_recent_nodes_snippet().
@@ -60,3 +60,8 @@ To render the snippet in the twig see the following example:
 ```Twig
 {{ snippet('[recent_nodes limit="10" title="Recently updated nodes"]') }}
 ```
+
+## To do
+* Fix coding standard issues/mismatches - @code in classes, interfaces; update docblocks etc;
+* Add a button to wysiwyg editor that allows to add snippets from the editor;
+* Add tests;
